@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Quiz</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white font-sans min-h-screen flex items-center justify-center">
+  <div class="w-full max-w-3xl p-6">
+    <h1 class="text-3xl font-bold mb-6 text-center">AI Quiz App</h1>
+
+    <!-- Topic Input -->
+    <div id="start-screen" class="flex flex-col items-center gap-4">
+      <input id="topic" type="text" placeholder="Enter topic (e.g. Python)" 
+             class="px-4 py-2 rounded-lg text-black w-full max-w-md"/>
+      <button onclick="startQuiz()" 
+              class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg">
+        Start Quiz
+      </button>
+    </div>
+
+    <!-- Quiz Form -->
+    <form id="quiz-form" class="hidden flex-col gap-6 mt-8" onsubmit="submitAnswers(event)">
+      <div id="questions-container" class="space-y-6"></div>
+      <button type="submit" 
+              class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg mt-4">
+        Submit Answers
+      </button>
+    </form>
+
+    <!-- Result -->
+    <div id="result-screen" class="hidden mt-8 text-center">
+      <h2 class="text-2xl font-bold mb-4">Your Score</h2>
+      <p id="score-text" class="text-lg"></p>
+    </div>
+  </div>
+
+  <script>
+    let currentQuestions = [];
+
+    async function startQuiz() {
+      const topic = document.getElementById('topic').value.trim();
+      if (!topic) return alert("Please enter a topic");
+
+      try {
+        const res = await fetch(`/questions/?topic=${encodeURIComponent(topic)}`);
+        currentQuestions = await res.json();
+        renderQuestions(currentQuestions);
+      } catch (err) {
+        alert("Failed to load questions.");
+      }
+    }
+
+    function renderQuestions(questions) {
+      const container = document.getElementById("questions-container");
+      container.innerHTML = "";
+
+      questions.forEach((q, index) => {
+        const questionDiv = document.createElement("div");
+        questionDiv.innerHTML = `
+          <p class="font-semibold">${index + 1}. ${q.question}</p>
+          ${q.choices.map((choice, i) => `
+            <label class="block mt-1">
+              <input type="radio" name="q${index}" value="${i}" class="mr-2">
+              ${choice}
+            </label>
+          `).join("")}
+        `;
+        container.appendChild(questionDiv);
+      });
+
+      document.getElementById("start-screen").classList.add("hidden");
+      document.getElementById("quiz-form").classList.remove("hidden");
+    }
+
+    async function submitAnswers(event) {
+      event.preventDefault();
+
+      const form = document.getElementById("quiz-form");
+      const results = [];
+
+      currentQuestions.forEach((q, idx) => {
+        const selected = form.querySelector(`input[name="q${idx}"]:checked`);
+        results.push({
+          id: q.id,
+          answer: selected ? parseInt(selected.value) : -1
+        });
+      });
+
+      try {
+        const res = await fetch('/check_answers/', {
+          method: 'POST',
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(results)
+        });
+        const resultData = await res.json();
+        showResults(resultData);
+      } catch (err) {
+        alert("Failed to check answers.");
+      }
+    }
+
+    function showResults(data) {
+      document.getElementById("quiz-form").classList.add("hidden");
+      const scoreText = `You scored ${data.score} out of ${currentQuestions.length}`;
+      document.getElementById("score-text").innerText = scoreText;
+      document.getElementById("result-screen").classList.remove("hidden");
+    }
+  </script>
+</body>
+</html>
