@@ -14,3 +14,5 @@
 ### Start Server
 `uvicorn main:app --reload --port 8000`
 
+-website will be available at `http://localhost:8000`
+
