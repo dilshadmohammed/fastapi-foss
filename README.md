@@ -10,6 +10,7 @@
 
 ### Install FastAPI
 `pip install fastapi uvicorn`
+`pip install -q -U google-genai`
 
 ### Start Server
 `uvicorn main:app --reload --port 8000`

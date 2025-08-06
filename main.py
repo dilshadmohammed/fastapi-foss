@@ -8,11 +8,16 @@ from fastapi.staticfiles import StaticFiles
 # create FastAPI app instance
 app = FastAPI()
 
-
+# Mount static files directory for serving HTML and other static content only for testing purposes
+app.mount("/static", StaticFiles(directory="static"), name="static")
+@app.get("/", response_class=HTMLResponse)
+def serve_quiz_page():
+    with open("static/quiz.html", "r") as f:
+        return f.read()
     
 # Initialize Google GenAI client
 # Make sure to set your API key in the environment variable or replace it with your actual API
-client = genai.Client(api_key="AIzaSyDqIZlm3c3_OZw7pnVrMT6BXry6KaySlmg")
+client = genai.Client(api_key="API_KEY")
 
 
 # Define the Question model
@@ -26,7 +31,7 @@ class Question(BaseModel):
 questions_db = []
 
 @app.get("/questions/")
-def create_question(topic: str = Query(..., description="quiz topic")):
+def create_question(topic: str = "General Knowledge"):
     prompt = (
         f"Generate 5 multiple choice questions about {topic}. "
         "For each question, provide a JSON object with the following format: "
@@ -46,6 +51,11 @@ def create_question(topic: str = Query(..., description="quiz topic")):
         q.id = idx
     global questions_db
     questions_db = [q if isinstance(q, Question) else Question(**q) for q in questions]
+    # # Remove the answer field before returning to client
+    # questions_no_answer = [
+    #     {**q.model_dump(), "answer": None} for q in questions_db
+    # ]
+    # return questions_no_answer
     return questions_db
 
 

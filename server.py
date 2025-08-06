@@ -3,6 +3,7 @@ from fastapi import Query
 
 app = FastAPI()
 
+
 @app.get("/")
 def welcome():
     return {"message": "Welcome to the Quiz API!"}
